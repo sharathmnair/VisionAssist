@@ -1,0 +1,68 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/gradient_background">
+
+    <!-- Emergency Contact Button at the Top Left, Aligned with the About Button -->
+
+    <!-- About Button at the Top Right, Aligned Horizontally with Emergency Button -->
+
+    <Button
+        android:id="@+id/emergencyContactButton"
+        android:layout_width="125dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="80dp"
+        android:background="@drawable/transparent_button"
+        android:text="Emergency"
+        android:textColor="@android:color/white"
+        android:textSize="16sp" />
+
+    <Button
+        android:id="@+id/aboutButton"
+        android:layout_width="125dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="80dp"
+        android:background="@drawable/transparent_button"
+        android:text="About"
+        android:textColor="@android:color/white"
+        android:textSize="16sp" />
+
+    <!-- Vision Assist Button (Start Detection) -->
+    <Button
+        android:id="@+id/startDetectionButton"
+        android:layout_width="325dp"
+        android:layout_height="300dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="200dp"
+        android:background="@drawable/transparent_button"
+        android:text="VISION ASSIST"
+        android:textColor="@android:color/white"
+        android:textSize="24sp" />
+
+    <Button
+        android:id="@+id/exitButton"
+        android:layout_width="325dp"
+        android:layout_height="300dp"
+        android:layout_below="@id/startDetectionButton"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="50dp"
+        android:background="@drawable/transparent_button"
+        android:text="Exit"
+        android:textColor="@android:color/white"
+        android:textSize="18sp"/>
+
+    <TextView
+        android:id="@+id/footerText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="30dp"
+        android:text="Government Engineering College, Barton Hill"
+        android:textSize="16sp"
+        android:textColor="@android:color/white"/>
+</RelativeLayout>
