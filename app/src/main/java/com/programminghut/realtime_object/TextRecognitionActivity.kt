@@ -9,9 +9,6 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
-import android.hardware.camera2.params.OutputConfiguration
-import android.hardware.camera2.params.SessionConfiguration
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.HandlerThread
@@ -20,7 +17,6 @@ import android.speech.tts.UtteranceProgressListener
 import android.view.Surface
 import android.view.TextureView
 import android.widget.Button
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -28,7 +24,6 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.util.*
-import java.util.concurrent.Executors
 
 class TextRecognitionActivity : AppCompatActivity() {
 
@@ -43,15 +38,15 @@ class TextRecognitionActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_text_recognition) // Updated layout file
+        setContentView(R.layout.activity_text_recognition)
 
         val visionAssistButton: Button = findViewById(R.id.visionAssistButton)
         visionAssistButton.setOnClickListener {
-            // Optionally handle tap to switch back to object detection or other actions
             val intent = Intent(this, MainActivity::class.java)
             startActivity(intent)
             finish()
         }
+
         textureView = findViewById(R.id.textureView)
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
 
@@ -59,7 +54,6 @@ class TextRecognitionActivity : AppCompatActivity() {
         handlerThread.start()
         handler = Handler(handlerThread.looper)
 
-        // Initialize Text-to-Speech
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.language = Locale.US
@@ -80,7 +74,6 @@ class TextRecognitionActivity : AppCompatActivity() {
             }
         }
 
-        // Check Camera Permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             setupTextureViewListener()
         } else {
@@ -105,40 +98,42 @@ class TextRecognitionActivity : AppCompatActivity() {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.P)
     private fun openCamera() {
-        val cameraId = cameraManager.cameraIdList[0]
-        cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
-            override fun onOpened(camera: CameraDevice) {
-                cameraDevice = camera
-                val surfaceTexture = textureView.surfaceTexture
-                val surface = Surface(surfaceTexture)
-
-                val captureRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                captureRequest.addTarget(surface)
-
-                val outputConfiguration = OutputConfiguration(surface)
-                val executor = Executors.newSingleThreadExecutor()
-
-                val sessionConfiguration = SessionConfiguration(
-                    SessionConfiguration.SESSION_REGULAR,
-                    listOf(outputConfiguration),
-                    executor,
-                    object : CameraCaptureSession.StateCallback() {
-                        override fun onConfigured(session: CameraCaptureSession) {
-                            session.setRepeatingRequest(captureRequest.build(), null, handler)
-                        }
-
-                        override fun onConfigureFailed(session: CameraCaptureSession) {}
-                    }
-                )
-
-                cameraDevice.createCaptureSession(sessionConfiguration)
+        try {
+            val cameraId = cameraManager.cameraIdList[0]
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 101)
+                return
             }
+            cameraManager.openCamera(cameraId, object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) {
+                    cameraDevice = camera
+                    val surfaceTexture = textureView.surfaceTexture
+                    surfaceTexture?.setDefaultBufferSize(textureView.width, textureView.height)
+                    val surface = Surface(surfaceTexture)
 
-            override fun onDisconnected(camera: CameraDevice) {}
-            override fun onError(camera: CameraDevice, error: Int) {}
-        }, handler)
+                    val captureRequest = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+                    captureRequest.addTarget(surface)
+
+                    cameraDevice.createCaptureSession(
+                        listOf(surface),
+                        object : CameraCaptureSession.StateCallback() {
+                            override fun onConfigured(session: CameraCaptureSession) {
+                                session.setRepeatingRequest(captureRequest.build(), null, handler)
+                            }
+
+                            override fun onConfigureFailed(session: CameraCaptureSession) {}
+                        },
+                        handler
+                    )
+                }
+
+                override fun onDisconnected(camera: CameraDevice) {}
+                override fun onError(camera: CameraDevice, error: Int) {}
+            }, handler)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private fun processImageForTextRecognition(bitmap: Bitmap) {
@@ -147,9 +142,16 @@ class TextRecognitionActivity : AppCompatActivity() {
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
-                val detectedText = visionText.text
-                if (detectedText.isNotEmpty()) {
-                    speakOut(detectedText)
+                val detectedText = StringBuilder()
+                for (block in visionText.textBlocks) {
+                    for (line in block.lines) {
+                        detectedText.append(line.text.trim()).append(". ")
+                    }
+                }
+
+                val detectedTextString = detectedText.toString().trim()
+                if (detectedTextString.isNotEmpty()) {
+                    speakOut(detectedTextString)
                 }
             }
             .addOnFailureListener { e ->
@@ -158,6 +160,8 @@ class TextRecognitionActivity : AppCompatActivity() {
     }
 
     private fun speakOut(text: String) {
+        if (text.isEmpty() || isSpeaking) return
+
         isSpeaking = true
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TextRecognitionTTS")
     }

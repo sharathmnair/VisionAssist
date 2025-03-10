@@ -8,4 +8,10 @@
         <item name="android:textStyle">bold</item>
         <item name="android:elevation">8dp</item>
     </style>
+    <style name="ModernText" parent="TextAppearance.AppCompat">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">18sp</item>
+        <item name="android:textColor">#FFFFFF</item>
+        <item name="android:letterSpacing">0.05</item>
+    </style>
 </resources>

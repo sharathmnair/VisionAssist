@@ -3,7 +3,6 @@ package com.programminghut.realtime_object
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.SurfaceTexture
@@ -15,7 +14,9 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
 import android.widget.Button
+import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -29,26 +30,18 @@ import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var labels: List<String>
-    lateinit var imageProcessor: ImageProcessor
-    lateinit var bitmap: Bitmap
-    lateinit var cameraDevice: CameraDevice
-    lateinit var handler: Handler
-    lateinit var handlerThread: HandlerThread
-    lateinit var cameraManager: CameraManager
-    lateinit var textureView: TextureView
-    lateinit var model: SsdMobilenetV11Metadata1
-    lateinit var textToSpeech: TextToSpeech
+    private lateinit var labels: List<String>
+    private lateinit var imageProcessor: ImageProcessor
+    private lateinit var bitmap: Bitmap
+    private lateinit var cameraDevice: CameraDevice
+    private lateinit var handler: Handler
+    private lateinit var handlerThread: HandlerThread
+    private lateinit var cameraManager: CameraManager
+    private lateinit var textureView: TextureView
+    private lateinit var model: SsdMobilenetV11Metadata1
+    private lateinit var textToSpeech: TextToSpeech
 
-    var lastSpokenText: String = ""
-    var isSpeaking = false
-
-    val paint = Paint().apply {
-        color = Color.RED
-        style = Paint.Style.STROKE
-        strokeWidth = 8f
-        textSize = 50f
-    }
+    private var isSpeaking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,23 +50,9 @@ class MainActivity : AppCompatActivity() {
         val stopDetectionButton: Button = findViewById(R.id.stopDetectionButton)
         val exitButton: Button = findViewById(R.id.exitButton)
 
-        exitButton.setOnClickListener {
-            val intent = Intent(this, StartScreenActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
-
-        var lastTapTime = 0L
-        stopDetectionButton.setOnClickListener {
-            val currentTime = System.currentTimeMillis()
-            if (currentTime - lastTapTime < 300) {
-                val intent = Intent(this, TextRecognitionActivity::class.java)
-                startActivity(intent)
-                finish()
-            } else {
-                lastTapTime = currentTime
-            }
-        }
+        // Set up accessible buttons
+        setupAccessibleButton(stopDetectionButton, "Read Text")
+        setupAccessibleButton(exitButton, "Go Back")
 
         getPermission()
 
@@ -88,11 +67,11 @@ class MainActivity : AppCompatActivity() {
 
         textureView = findViewById(R.id.textureView)
 
-        // Initialize TTS
+        // Initialize TTS with TalkBack in mind
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.language = Locale.US
-                textToSpeech.setSpeechRate(0.8f)
+                textToSpeech.setSpeechRate(1.0f)
                 textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {
                         isSpeaking = true
@@ -102,11 +81,12 @@ class MainActivity : AppCompatActivity() {
                         isSpeaking = false
                     }
 
+                    @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
                         isSpeaking = false
                     }
                 })
-                speakOut("Object Detection Started.")
+                speakOut("Object Detection Started.", findViewById(android.R.id.content))
             }
         }
 
@@ -125,6 +105,7 @@ class MainActivity : AppCompatActivity() {
                 if (isSpeaking) return
 
                 bitmap = textureView.bitmap ?: return
+
                 var image = TensorImage.fromBitmap(bitmap)
                 image = imageProcessor.process(image)
 
@@ -133,52 +114,73 @@ class MainActivity : AppCompatActivity() {
                 val classes = outputs.classesAsTensorBuffer.floatArray
                 val scores = outputs.scoresAsTensorBuffer.floatArray
 
-                val canvas = Canvas(bitmap)
                 val h = bitmap.height
-                val w = bitmap.width
 
-                val detectedObjects = mutableSetOf<String>()
+                val detectedObjects = mutableListOf<Triple<String, Float, Float>>() // Label, Score, Distance
+
                 scores.forEachIndexed { index, score ->
                     if (score > 0.5) {
                         val label = labels[classes[index].toInt()]
                         val x = index * 4
 
-                        val left = locations[x + 1] * w
                         val top = locations[x] * h
-                        val right = locations[x + 3] * w
                         val bottom = locations[x + 2] * h
 
                         val boxHeight = bottom - top
-
                         val estimatedDistance = estimateDistance(boxHeight, h)
 
-                        val detectedText = "$label, $estimatedDistance meters"
-                        detectedObjects.add(detectedText)
-
-                        paint.style = Paint.Style.STROKE
-                        canvas.drawRect(RectF(left, top, right, bottom), paint)
-
-                        paint.style = Paint.Style.FILL
-                        canvas.drawText("$label (${String.format("%.1f", estimatedDistance)}m)", left, top - 10, paint)
+                        detectedObjects.add(Triple(label, score, estimatedDistance))
                     }
                 }
 
-                val detectedSpeech = detectedObjects.joinToString(", ")
-                if (detectedSpeech.isNotEmpty() && detectedSpeech != lastSpokenText) {
-                    speakOut(detectedSpeech)
-                    lastSpokenText = detectedSpeech
+                // Process the top 3 detected objects by score
+                val topDetectedObjects = detectedObjects
+                    .sortedByDescending { it.second }
+                    .take(3)
+                    .map { "${it.first}, ${String.format(Locale.US, "%.1f", it.third)} meters" }
+
+                // Display detected objects text
+                val detectedObjectsTextView: TextView = findViewById(R.id.detectedObjectsTextView)
+                detectedObjectsTextView.text = topDetectedObjects.joinToString("\n")
+
+                val detectedSpeech = topDetectedObjects.joinToString(", ")
+
+                if (detectedSpeech.isNotEmpty()) {
+                    speakOut(detectedSpeech, textureView)
                     isSpeaking = true
                 }
+
+                textureView.invalidate()
             }
         }
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
     }
+    private fun setupAccessibleButton(button: Button, buttonName: String) {
+        button.setOnClickListener {
+            speakOut(buttonName, button)
+        }
 
-    override fun onResume() {
-        super.onResume()
-        if (::textToSpeech.isInitialized) {
-            speakOut("Object Detection Started.")
+        button.setOnLongClickListener {
+            when (button.id) {
+                R.id.stopDetectionButton -> {
+                    val intent = Intent(this, TextRecognitionActivity::class.java)
+                    startActivity(intent)
+                    // Do NOT call finish() here
+                }
+                R.id.exitButton -> {
+                    val intent = Intent(this, StartScreenActivity::class.java)
+                    startActivity(intent)
+                    finish() // Only call finish() for the exit button
+                }
+            }
+            true
+        }
+    }
+
+    private fun getPermission() {
+        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 101)
         }
     }
 
@@ -218,26 +220,31 @@ class MainActivity : AppCompatActivity() {
         }, handler)
     }
 
-    private fun getPermission() {
-        if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(android.Manifest.permission.CAMERA), 101)
-        }
-    }
-
-    private fun speakOut(text: String) {
+    private fun speakOut(text: String, view: View) {
         val params = Bundle()
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "ObjectDetectionTTS")
+
+        // Make TalkBack announce the detected objects
+        view.announceForAccessibility(text)
     }
 
     private fun estimateDistance(boxHeight: Float, imageHeight: Int): Float {
-        val referenceHeight = 200f // Assume 200 pixels corresponds to 1 meter
-        val distance = referenceHeight / boxHeight
-        return String.format("%.1f", distance).toFloat() // Rounds to 2 decimal places
-    }
+        // Sensor dimensions in millimeters for a typical 1/2.55" sensor
+        val sensorHeightMm = 4.29f
 
-    override fun onBackPressed() {
-        super.onBackPressed()
-        finish()
+        // Calculate the actual focal length in millimeters
+        val actualFocalLengthMm = (sensorHeightMm * 27f) / 35f
+
+        // Convert focal length to pixels
+        val focalLengthPixels = (actualFocalLengthMm / sensorHeightMm) * imageHeight
+
+        // Known object height in meters (assuming average person height)
+        val knownObjectHeightMeters = 1.7f
+
+        // Estimate the distance using the pinhole camera model
+        val distanceMeters = (knownObjectHeightMeters * focalLengthPixels) / boxHeight
+
+        return distanceMeters
     }
 
     override fun onDestroy() {
@@ -250,4 +257,4 @@ class MainActivity : AppCompatActivity() {
             cameraDevice.close()
         }
     }
-}
+} 

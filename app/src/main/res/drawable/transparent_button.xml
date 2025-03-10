@@ -1,8 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-
-    <!-- Semi-Transparent Background with Rounded Corners for Circular/Rectangular Buttons -->
-    <solid android:color="#66FF6200" />
-    <corners android:radius="75dp" />
-</shape>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="#505050"/> <!-- Darker when pressed -->
+            <corners android:radius="20dp"/>
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent"/>
+            <corners android:radius="20dp"/>
+            <stroke android:width="2dp" android:color="@android:color/white"/>
+        </shape>
+    </item>
+</selector>

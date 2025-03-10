@@ -37,7 +37,7 @@
         android:layout_width="325dp"
         android:layout_height="300dp"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="200dp"
+        android:layout_marginTop="180dp"
         android:background="@drawable/transparent_button"
         android:text="VISION ASSIST"
         android:textColor="@android:color/white"
@@ -56,6 +56,7 @@
         android:textSize="18sp"/>
 
     <TextView
+        android:textAppearance="@style/ModernText"
         android:id="@+id/footerText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

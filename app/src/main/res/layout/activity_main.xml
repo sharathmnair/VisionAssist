@@ -1,50 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@android:color/white">
+    android:layout_height="match_parent">
 
+    <!-- TextView for Detected Objects (no background) -->
     <TextView
-        android:id="@+id/spokenTextView"
+        android:id="@+id/detectedObjectsTextView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="24sp"
+        android:text="Detected Objects:"
+        android:textSize="18sp"
         android:textColor="#FFFFFF"
-        android:background="#80000000"
-        android:gravity="center"
-        android:padding="8dp"
-        android:text="Detected Objects will be shown here"
-        android:layout_alignParentBottom="true"
-        android:layout_centerHorizontal="true"/>
+        android:padding="10dp"
+        android:scrollbars="vertical"
+        android:maxHeight="150dp"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="10dp"/>
 
+    <!-- TextureView for Camera Feed -->
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_below="@id/detectedObjectsTextView"
         android:contentDescription="@string/app_name" />
 
-    <include layout="@layout/vision_assist_button" />
-
-    <!-- Circular VISION ASSIST Button with Transparent Style -->
+    <!-- Button to start reading text (example action) -->
     <Button
         android:id="@+id/stopDetectionButton"
-        android:layout_width="150dp"
-        android:layout_height="150dp"
-        android:layout_centerInParent="true"
+        android:layout_width="325dp"
+        android:layout_height="300dp"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="200dp"
         android:background="@drawable/transparent_button"
-        android:text="VISION ASSIST"
+        android:text="READ TEXT"
         android:textColor="@android:color/white"
-        android:textSize="20sp" />
+        android:textSize="24sp"
+        android:elevation="8dp" />
 
+    <!-- Button to go back to the start screen -->
     <Button
         android:id="@+id/exitButton"
         android:layout_width="325dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
+        android:layout_height="300dp"
+        android:layout_below="@id/stopDetectionButton"
         android:layout_centerHorizontal="true"
-        android:layout_marginBottom="50dp"
+        android:layout_marginTop="50dp"
         android:background="@drawable/transparent_button"
         android:text="BACK"
-        android:textSize="18sp"
-        android:textColor="@android:color/white"/>
+        android:textSize="20sp"
+        android:textColor="@android:color/white"
+        android:elevation="8dp"/>
+
 </RelativeLayout>

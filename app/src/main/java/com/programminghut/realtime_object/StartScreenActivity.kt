@@ -10,6 +10,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
@@ -46,6 +47,20 @@ class StartScreenActivity : AppCompatActivity() {
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.language = Locale.US
+                textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        // TTS has started speaking, do nothing
+                    }
+
+                    override fun onDone(utteranceId: String?) {
+                        // TTS finished speaking, start speech recognition
+                        runOnUiThread { initializeSpeechRecognizer() }
+                    }
+
+                    override fun onError(utteranceId: String?) {
+                        // Handle TTS error if needed
+                    }
+                })
                 textToSpeech.speak("Welcome to Vision Assist", TextToSpeech.QUEUE_FLUSH, null, "WelcomeTTS")
             }
         }
