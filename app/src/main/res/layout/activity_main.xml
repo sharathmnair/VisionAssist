@@ -3,53 +3,39 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <!-- TextView for Detected Objects (no background) -->
-    <TextView
-        android:id="@+id/detectedObjectsTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Detected Objects:"
-        android:textSize="18sp"
-        android:textColor="#FFFFFF"
-        android:padding="10dp"
-        android:scrollbars="vertical"
-        android:maxHeight="150dp"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="10dp"/>
-
-    <!-- TextureView for Camera Feed -->
+    <!-- Live Camera Feed -->
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/detectedObjectsTextView"
         android:contentDescription="@string/app_name" />
 
-    <!-- Button to start reading text (example action) -->
-    <Button
-        android:id="@+id/stopDetectionButton"
-        android:layout_width="325dp"
-        android:layout_height="300dp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="200dp"
-        android:background="@drawable/transparent_button"
-        android:text="READ TEXT"
-        android:textColor="@android:color/white"
-        android:textSize="24sp"
-        android:elevation="8dp" />
+    <!-- Detected Objects TextView -->
+    <TextView
+        android:id="@+id/detectedObjectsTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_margin="16dp"
+        android:background="#AA000000"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:padding="8dp"
+        android:elevation="10dp"
+        android:maxLines="10"
+        android:scrollbars="vertical" />
 
-    <!-- Button to go back to the start screen -->
-    <Button
-        android:id="@+id/exitButton"
-        android:layout_width="325dp"
-        android:layout_height="300dp"
-        android:layout_below="@id/stopDetectionButton"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="50dp"
-        android:background="@drawable/transparent_button"
-        android:text="BACK"
-        android:textSize="20sp"
-        android:textColor="@android:color/white"
-        android:elevation="8dp"/>
+    <!-- Centered Swipe Right Text -->
+    <TextView
+        android:id="@+id/swipeRightText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="SWIPE RIGHT TO GO BACK"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:padding="12dp"
+        android:background="#AA000000"
+        android:elevation="10dp" />
 
 </RelativeLayout>

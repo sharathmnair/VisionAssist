@@ -3,10 +3,23 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <!-- Live Camera Feed -->
     <TextureView
         android:id="@+id/textureView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <include layout="@layout/vision_assist_button" />
+    <!-- Centered Swipe Left Text -->
+    <TextView
+        android:id="@+id/swipeLeftText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="SWIPE LEFT TO GO BACK"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:padding="12dp"
+        android:background="#AA000000"
+        android:elevation="10dp" />
+
 </RelativeLayout>

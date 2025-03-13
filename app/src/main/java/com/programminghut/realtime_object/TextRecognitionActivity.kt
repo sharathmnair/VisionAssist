@@ -6,17 +6,15 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
-import android.hardware.camera2.CameraCaptureSession
-import android.hardware.camera2.CameraDevice
-import android.hardware.camera2.CameraManager
-import android.os.Bundle
-import android.os.Handler
-import android.os.HandlerThread
+import android.hardware.camera2.*
+import android.os.*
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.view.GestureDetector
+import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
-import android.widget.Button
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,19 +31,13 @@ class TextRecognitionActivity : AppCompatActivity() {
     private lateinit var handlerThread: HandlerThread
     private lateinit var cameraManager: CameraManager
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var gestureDetector: GestureDetector
 
     private var isSpeaking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_text_recognition)
-
-        val visionAssistButton: Button = findViewById(R.id.visionAssistButton)
-        visionAssistButton.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
 
         textureView = findViewById(R.id.textureView)
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
@@ -59,17 +51,9 @@ class TextRecognitionActivity : AppCompatActivity() {
                 textToSpeech.language = Locale.US
                 textToSpeech.setSpeechRate(0.8f)
                 textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        isSpeaking = true
-                    }
-
-                    override fun onDone(utteranceId: String?) {
-                        isSpeaking = false
-                    }
-
-                    override fun onError(utteranceId: String?) {
-                        isSpeaking = false
-                    }
+                    override fun onStart(utteranceId: String?) { isSpeaking = true }
+                    override fun onDone(utteranceId: String?) { isSpeaking = false }
+                    override fun onError(utteranceId: String?) { isSpeaking = false }
                 })
             }
         }
@@ -79,6 +63,8 @@ class TextRecognitionActivity : AppCompatActivity() {
         } else {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CAMERA), 101)
         }
+
+        setupSwipeGesture()
     }
 
     private fun setupTextureViewListener() {
@@ -154,9 +140,7 @@ class TextRecognitionActivity : AppCompatActivity() {
                     speakOut(detectedTextString)
                 }
             }
-            .addOnFailureListener { e ->
-                e.printStackTrace()
-            }
+            .addOnFailureListener { e -> e.printStackTrace() }
     }
 
     private fun speakOut(text: String) {
@@ -164,6 +148,30 @@ class TextRecognitionActivity : AppCompatActivity() {
 
         isSpeaking = true
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TextRecognitionTTS")
+    }
+
+    private fun setupSwipeGesture() {
+        gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 != null && e2 != null && e1.x > e2.x) {  // Detecting left swipe
+                    val intent = Intent(this@TextRecognitionActivity, StartScreenActivity::class.java)
+                    startActivity(intent)
+                    finish()
+                    return true
+                }
+                return false
+            }
+        })
+
+        findViewById<View>(android.R.id.content).setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            true
+        }
     }
 
     override fun onBackPressed() {

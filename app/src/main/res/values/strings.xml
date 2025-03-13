@@ -1,4 +1,19 @@
-<!-- res/values/strings.xml -->
 <resources>
-    <string name="app_name">Vision Assist</string>
+        <string name="app_name">Vision Assist</string>
+        <string name="about_text">
+        Vision Assist\n\n
+        Created by Karthik Krishna M, Nidhin M, Salahudheen, and Sharath M Nair from GEC BartonHill, Trivandrum.\n\n
+        Welcome to Vision Assist! This app is designed to assist visually impaired users by providing real-time object detection and text recognition using a live camera feed.\n\n
+        How to use the app:\n
+        1. Starting Detection: Press and hold the \'VISION ASSIST\' button on the starting screen to begin scanning.\n
+        2. Pausing Detection: Press and hold the \'VISION ASSIST\' button again to pause detection and return to the start screen.\n
+        3. Switching Modes: Double-tap the \'VISION ASSIST\' button to switch between Object Detection and Text Recognition modes.\n
+        4. Emergency Contact: Press and hold the \'Emergency\' button to immediately call the saved contact.\n
+        5. Exit: Press and hold the \'Exit\' button to close the app.\n\n
+        Additional Features:\n
+        - Voice prompts will guide you when objects are detected or text is recognized.\n
+        - If an object is too close, a warning message will prompt you to move away.\n
+        - TalkBack support ensures all buttons announce their names before executing their functions.\n\n
+        Thank you for using Vision Assist. We hope it serves you well!
+    </string>
 </resources>

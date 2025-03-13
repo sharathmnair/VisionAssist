@@ -12,10 +12,7 @@ import android.hardware.camera2.params.SessionConfiguration
 import android.os.*
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
-import android.view.Surface
-import android.view.TextureView
-import android.view.View
-import android.widget.Button
+import android.view.*
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -40,19 +37,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var textureView: TextureView
     private lateinit var model: SsdMobilenetV11Metadata1
     private lateinit var textToSpeech: TextToSpeech
+    private lateinit var gestureDetector: GestureDetector
 
     private var isSpeaking = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val detectedObjectsTextView = findViewById<TextView>(R.id.detectedObjectsTextView)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val stopDetectionButton: Button = findViewById(R.id.stopDetectionButton)
-        val exitButton: Button = findViewById(R.id.exitButton)
-
-        // Set up accessible buttons
-        setupAccessibleButton(stopDetectionButton, "Read Text")
-        setupAccessibleButton(exitButton, "Go Back")
 
         getPermission()
 
@@ -67,7 +59,7 @@ class MainActivity : AppCompatActivity() {
 
         textureView = findViewById(R.id.textureView)
 
-        // Initialize TTS with TalkBack in mind
+        // Initialize TTS
         textToSpeech = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 textToSpeech.language = Locale.US
@@ -81,7 +73,6 @@ class MainActivity : AppCompatActivity() {
                         isSpeaking = false
                     }
 
-                    @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
                         isSpeaking = false
                     }
@@ -97,13 +88,10 @@ class MainActivity : AppCompatActivity() {
 
             override fun onSurfaceTextureSizeChanged(surfaceTexture: SurfaceTexture, width: Int, height: Int) {}
 
-            override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean {
-                return false
-            }
+            override fun onSurfaceTextureDestroyed(surfaceTexture: SurfaceTexture): Boolean = false
 
             override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) {
                 if (isSpeaking) return
-
                 bitmap = textureView.bitmap ?: return
 
                 var image = TensorImage.fromBitmap(bitmap)
@@ -115,8 +103,7 @@ class MainActivity : AppCompatActivity() {
                 val scores = outputs.scoresAsTensorBuffer.floatArray
 
                 val h = bitmap.height
-
-                val detectedObjects = mutableListOf<Triple<String, Float, Float>>() // Label, Score, Distance
+                val detectedObjects = mutableListOf<Triple<String, Float, Float>>()
 
                 scores.forEachIndexed { index, score ->
                     if (score > 0.5) {
@@ -133,15 +120,10 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                // Process the top 3 detected objects by score
                 val topDetectedObjects = detectedObjects
                     .sortedByDescending { it.second }
                     .take(3)
-                    .map { "${it.first}, ${String.format(Locale.US, "%.1f", it.third)} meters" }
-
-                // Display detected objects text
-                val detectedObjectsTextView: TextView = findViewById(R.id.detectedObjectsTextView)
-                detectedObjectsTextView.text = topDetectedObjects.joinToString("\n")
+                    .map { "${it.first}: ${String.format(Locale.US, "%.1f", it.third)} meters" }
 
                 val detectedSpeech = topDetectedObjects.joinToString(", ")
 
@@ -149,32 +131,26 @@ class MainActivity : AppCompatActivity() {
                     speakOut(detectedSpeech, textureView)
                     isSpeaking = true
                 }
-
-                textureView.invalidate()
             }
         }
 
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
-    }
-    private fun setupAccessibleButton(button: Button, buttonName: String) {
-        button.setOnClickListener {
-            speakOut(buttonName, button)
-        }
 
-        button.setOnLongClickListener {
-            when (button.id) {
-                R.id.stopDetectionButton -> {
-                    val intent = Intent(this, TextRecognitionActivity::class.java)
-                    startActivity(intent)
-                    // Do NOT call finish() here
-                }
-                R.id.exitButton -> {
-                    val intent = Intent(this, StartScreenActivity::class.java)
-                    startActivity(intent)
-                    finish() // Only call finish() for the exit button
-                }
+        gestureDetector = GestureDetector(this, GestureListener())
+        textureView.setOnTouchListener { _, event ->
+            if (gestureDetector.onTouchEvent(event)) {
+                true  // Gesture detected, consume the event
+            } else {
+                false  // Let other touch events pass through
             }
+        }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        return if (gestureDetector.onTouchEvent(event)) {
             true
+        } else {
+            super.onTouchEvent(event)
         }
     }
 
@@ -207,11 +183,9 @@ class MainActivity : AppCompatActivity() {
                         override fun onConfigured(session: CameraCaptureSession) {
                             session.setRepeatingRequest(captureRequest.build(), null, handler)
                         }
-
                         override fun onConfigureFailed(session: CameraCaptureSession) {}
                     }
                 )
-
                 cameraDevice.createCaptureSession(sessionConfiguration)
             }
 
@@ -221,30 +195,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun speakOut(text: String, view: View) {
-        val params = Bundle()
-        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, params, "ObjectDetectionTTS")
-
-        // Make TalkBack announce the detected objects
+        textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "ObjectDetectionTTS")
         view.announceForAccessibility(text)
+
+        runOnUiThread {
+            val detectedObjectsTextView = findViewById<TextView>(R.id.detectedObjectsTextView)
+            detectedObjectsTextView.text = text.replace(", ", "\n")  // New line after each object-distance pair
+        }
     }
 
     private fun estimateDistance(boxHeight: Float, imageHeight: Int): Float {
-        // Sensor dimensions in millimeters for a typical 1/2.55" sensor
         val sensorHeightMm = 4.29f
-
-        // Calculate the actual focal length in millimeters
         val actualFocalLengthMm = (sensorHeightMm * 27f) / 35f
-
-        // Convert focal length to pixels
         val focalLengthPixels = (actualFocalLengthMm / sensorHeightMm) * imageHeight
-
-        // Known object height in meters (assuming average person height)
         val knownObjectHeightMeters = 1.7f
-
-        // Estimate the distance using the pinhole camera model
-        val distanceMeters = (knownObjectHeightMeters * focalLengthPixels) / boxHeight
-
-        return distanceMeters
+        return (knownObjectHeightMeters * focalLengthPixels) / boxHeight
     }
 
     override fun onDestroy() {
@@ -253,8 +218,27 @@ class MainActivity : AppCompatActivity() {
         textToSpeech.stop()
         textToSpeech.shutdown()
         handlerThread.quitSafely()
-        if (::cameraDevice.isInitialized) {
-            cameraDevice.close()
+        if (::cameraDevice.isInitialized) cameraDevice.close()
+    }
+
+    inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
+        private val SWIPE_THRESHOLD = 100
+        private val SWIPE_VELOCITY_THRESHOLD = 100
+
+        override fun onFling(
+            e1: MotionEvent?,
+            e2: MotionEvent,
+            velocityX: Float,
+            velocityY: Float
+        ): Boolean {
+            if (e1 != null && e2 != null) {
+                val diffX = e2.x - e1.x
+                if (diffX > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                    startActivity(Intent(this@MainActivity, StartScreenActivity::class.java))
+                    return true
+                }
+            }
+            return false
         }
     }
-} 
+}
