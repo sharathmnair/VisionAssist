@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.*
+import androidx.preference.PreferenceManager
 import android.speech.RecognizerIntent
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -13,6 +14,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -85,7 +87,7 @@ class StartScreenActivity : AppCompatActivity() {
         }
 
         // Set touch listener to buttons
-        setButtonTouchListener(aboutButton, "About", ::openAboutScreen)
+        setButtonTouchListener(aboutButton, "Settings", ::openAboutScreen)
         setButtonTouchListener(emergencyContactButton, "Emergency", ::callEmergencyContact)
         setButtonTouchListener(exitButton, "Exit", ::exitApp)
 
@@ -115,7 +117,7 @@ class StartScreenActivity : AppCompatActivity() {
                     MotionEvent.ACTION_DOWN -> {
                         isLongPress = false
                         triggerVibration(50)
-                        speak("Say 'Object Detection' or 'Text Recognition' to proceed")
+                        speak("long press for voice command")
                         handler.postDelayed({
                             isLongPress = true
                             triggerVibration(200)
@@ -201,7 +203,7 @@ class StartScreenActivity : AppCompatActivity() {
                 spokenText.contains("object detection", ignoreCase = true) -> {
                     openMainScreen()  // Navigate to the main screen for object detection
                 }
-                spokenText.contains("text recognition", ignoreCase = true) -> {
+                spokenText.contains("read text", ignoreCase = true) -> {
                     openTextRecognitionScreen()  // Navigate to the text recognition screen
                 }
                 else -> {
@@ -212,15 +214,32 @@ class StartScreenActivity : AppCompatActivity() {
     }
 
     private fun callEmergencyContact() {
-        val emergencyNumber = "8156944286"
-        val callIntent = Intent(Intent.ACTION_CALL).apply {
-            data = Uri.parse("tel:$emergencyNumber")
-        }
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
+        val selectedContact = sharedPreferences.getString("selectedEmergencyContact", null)
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-            startActivity(callIntent)
+        if (selectedContact != null) {
+            val emergencyContacts = mapOf(
+                "Sharath M Nair" to "8156944286",
+                "Police" to "100",
+                "Fire Department" to "101",
+                "Ambulance" to "102",
+            )
+
+            val contactNumber = emergencyContacts[selectedContact]
+
+            if (contactNumber != null) {
+                val callIntent = Intent(Intent.ACTION_CALL)
+                callIntent.data = Uri.parse("tel:$contactNumber")
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                    startActivity(callIntent)
+                } else {
+                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE), 1)
+                }
+            } else {
+                Toast.makeText(this, "Emergency contact number not found", Toast.LENGTH_SHORT).show()
+            }
         } else {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE), 102)
+            Toast.makeText(this, "Please select an emergency contact from Settings", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -239,7 +258,7 @@ class StartScreenActivity : AppCompatActivity() {
     }
 
     private fun openAboutScreen() {
-        startActivity(Intent(this, AboutActivity::class.java))
+        startActivity(Intent(this, SettingsActivity::class.java))
     }
 
     private fun exitApp() {

@@ -15,5 +15,8 @@
         - If an object is too close, a warning message will prompt you to move away.\n
         - TalkBack support ensures all buttons announce their names before executing their functions.\n\n
         Thank you for using Vision Assist. We hope it serves you well!
-    </string>
+        </string>
+        <string name="settings">Settings</string>
+        <string name="enable_voice_commands">Enable Voice Commands</string>
+        <string name="enable_tts">Enable Text-to-Speech</string>
 </resources>

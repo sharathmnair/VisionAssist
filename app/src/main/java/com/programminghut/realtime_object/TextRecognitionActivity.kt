@@ -15,6 +15,7 @@ import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
 import android.view.View
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -32,6 +33,7 @@ class TextRecognitionActivity : AppCompatActivity() {
     private lateinit var cameraManager: CameraManager
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var gestureDetector: GestureDetector
+    private lateinit var recognizedTextView: TextView
 
     private var isSpeaking = false
 
@@ -40,8 +42,9 @@ class TextRecognitionActivity : AppCompatActivity() {
         setContentView(R.layout.activity_text_recognition)
 
         textureView = findViewById(R.id.textureView)
-        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        recognizedTextView = findViewById(R.id.recognizedTextView)  // Initialize the TextView
 
+        cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
         handlerThread = HandlerThread("TextRecognitionThread")
         handlerThread.start()
         handler = Handler(handlerThread.looper)
@@ -66,6 +69,7 @@ class TextRecognitionActivity : AppCompatActivity() {
 
         setupSwipeGesture()
     }
+
 
     private fun setupTextureViewListener() {
         textureView.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
@@ -124,7 +128,7 @@ class TextRecognitionActivity : AppCompatActivity() {
 
     private fun processImageForTextRecognition(bitmap: Bitmap) {
         val image = InputImage.fromBitmap(bitmap, 0)
-        val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+        val recognizer = TextRecognition.getClient(TextRecognizerOptions.Builder().build())
 
         recognizer.process(image)
             .addOnSuccessListener { visionText ->
@@ -137,6 +141,9 @@ class TextRecognitionActivity : AppCompatActivity() {
 
                 val detectedTextString = detectedText.toString().trim()
                 if (detectedTextString.isNotEmpty()) {
+                    runOnUiThread {
+                        recognizedTextView.text = detectedTextString  // Display detected text
+                    }
                     speakOut(detectedTextString)
                 }
             }
@@ -145,8 +152,6 @@ class TextRecognitionActivity : AppCompatActivity() {
 
     private fun speakOut(text: String) {
         if (text.isEmpty() || isSpeaking) return
-
-        isSpeaking = true
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TextRecognitionTTS")
     }
 
@@ -158,7 +163,7 @@ class TextRecognitionActivity : AppCompatActivity() {
                 velocityX: Float,
                 velocityY: Float
             ): Boolean {
-                if (e1 != null && e2 != null && e1.x > e2.x) {  // Detecting left swipe
+                if (e1 != null && e2 != null && e1.x > e2.x) {
                     val intent = Intent(this@TextRecognitionActivity, StartScreenActivity::class.java)
                     startActivity(intent)
                     finish()
