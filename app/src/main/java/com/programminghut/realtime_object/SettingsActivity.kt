@@ -25,8 +25,8 @@ class SettingsActivity : AppCompatActivity() {
         val contactSpinner: Spinner = findViewById(R.id.contactSpinner)
         val saveButton: Button = findViewById(R.id.saveButton)
 
-        // Load saved contact preference
-        val savedContact = sharedPreferences.getString("selectedEmergencyContact", "")
+        // Load saved contact number
+        val savedNumber = sharedPreferences.getString("selectedEmergencyContact", "")
 
         // Set up Emergency Contact Spinner
         val contactNames = emergencyContacts.keys.toList()
@@ -34,21 +34,23 @@ class SettingsActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         contactSpinner.adapter = adapter
 
-        if (savedContact != null && contactNames.contains(savedContact)) {
-            contactSpinner.setSelection(contactNames.indexOf(savedContact))
+        // Set the spinner to the saved contact name if it exists
+        if (savedNumber != null) {
+            val savedContactName = emergencyContacts.entries.find { it.value == savedNumber }?.key
+            if (savedContactName != null) {
+                contactSpinner.setSelection(contactNames.indexOf(savedContactName))
+            }
         }
 
-        // Save selected emergency contact
+        // Save selected emergency contact's phone number
         saveButton.setOnClickListener {
-            val selectedContact = contactNames[contactSpinner.selectedItemPosition]
-            sharedPreferences.edit().putString("selectedEmergencyContact", selectedContact).apply()
-            Toast.makeText(this, "Emergency contact saved: $selectedContact", Toast.LENGTH_SHORT).show()
-        }
-    }
+            val selectedContactName = contactNames[contactSpinner.selectedItemPosition]
+            val selectedContactNumber = emergencyContacts[selectedContactName]
 
-    // Method to get the phone number of the selected contact
-    fun getSelectedEmergencyNumber(): String? {
-        val selectedContact = sharedPreferences.getString("selectedEmergencyContact", null)
-        return emergencyContacts[selectedContact]
+            if (selectedContactNumber != null) {
+                sharedPreferences.edit().putString("selectedEmergencyContact", selectedContactNumber).apply()
+                Toast.makeText(this, "Emergency contact saved: $selectedContactName", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }

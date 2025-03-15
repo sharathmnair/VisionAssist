@@ -1,10 +1,12 @@
 package com.programminghut.realtime_object
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
+import kotlin.math.abs
+import androidx.core.net.toUri
 import android.os.*
 import androidx.preference.PreferenceManager
 import android.speech.RecognizerIntent
@@ -25,10 +27,10 @@ class StartScreenActivity : AppCompatActivity() {
 
     private inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
 
-        private val SWIPE_THRESHOLD = 100
-        private val SWIPE_VELOCITY_THRESHOLD = 100
+        private val swipeThreshold = 100
+        private val swipeVelocityThreshold = 100
         private var lastSwipeUpTime = 0L
-        private val DOUBLE_SWIPE_TIMEOUT = 1000 // 1 second
+        private val doubleSwipeTimeout = 1000 // 1 second
 
         override fun onFling(
             e1: MotionEvent?,
@@ -36,27 +38,44 @@ class StartScreenActivity : AppCompatActivity() {
             velocityX: Float,
             velocityY: Float
         ): Boolean {
-            if (e1 == null || e2 == null) return false
+            if (e1 == null) return false
             val diffX = e2.x - e1.x
             val diffY = e2.y - e1.y
 
+            return handleSwipe(diffX, diffY, velocityX, velocityY)
+        }
+
+        private fun handleSwipe(diffX: Float, diffY: Float, velocityX: Float, velocityY: Float): Boolean {
             return when {
-                Math.abs(diffX) > Math.abs(diffY) -> {  // Horizontal Swipe
-                    if (Math.abs(diffX) > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
-                        if (diffX > 0) openTextRecognitionScreen()  // Swipe Right
-                        else openMainScreen()  // Swipe Left
-                        true
-                    } else false
+                isHorizontalSwipe(diffX, diffY, velocityX) -> {
+                    if (diffX > 0) openTextRecognitionScreen()  // Swipe Right
+                    else openMainScreen()  // Swipe Left
+                    true
                 }
-                Math.abs(diffY) > SWIPE_THRESHOLD && Math.abs(velocityY) > SWIPE_VELOCITY_THRESHOLD -> { // Vertical Swipe
-                    if (diffY < 0) { // Swipe Up
-                        val currentTime = System.currentTimeMillis()
-                        if (currentTime - lastSwipeUpTime <= DOUBLE_SWIPE_TIMEOUT) exitApp()
-                        lastSwipeUpTime = currentTime
-                        true
-                    } else false
+                isVerticalSwipe(diffY, velocityY) -> {
+                    if (diffY < 0) handleSwipeUp()  // Swipe Up
+                    else false
                 }
                 else -> false
+            }
+        }
+
+        private fun isHorizontalSwipe(diffX: Float, diffY: Float, velocityX: Float): Boolean {
+            return abs(diffX) > abs(diffY) && abs(diffX) > swipeThreshold && abs(velocityX) > swipeVelocityThreshold
+        }
+
+        private fun isVerticalSwipe(diffY: Float, velocityY: Float): Boolean {
+            return abs(diffY) > swipeThreshold && abs(velocityY) > swipeVelocityThreshold
+        }
+
+        private fun handleSwipeUp(): Boolean {
+            val currentTime = System.currentTimeMillis()
+            return if (currentTime - lastSwipeUpTime <= doubleSwipeTimeout) {
+                exitApp()  // Double Swipe Up detected
+                true
+            } else {
+                lastSwipeUpTime = currentTime
+                true  // Single Swipe Up detected
             }
         }
     }
@@ -65,6 +84,7 @@ class StartScreenActivity : AppCompatActivity() {
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var vibrator: Vibrator
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_start_screen)
@@ -75,7 +95,7 @@ class StartScreenActivity : AppCompatActivity() {
         rootView.setOnTouchListener { _, event -> gestureDetector.onTouchEvent(event) }
 
         val startDetectionButton: Button = findViewById(R.id.startDetectionButton)
-        val aboutButton: Button = findViewById(R.id.aboutButton)
+        val aboutButton: Button = findViewById(R.id.settingsButton)
         val emergencyContactButton: Button = findViewById(R.id.emergencyContactButton)
         val exitButton: Button = findViewById(R.id.exitButton)
 
@@ -100,6 +120,7 @@ class StartScreenActivity : AppCompatActivity() {
                 textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) {}
                     override fun onDone(utteranceId: String?) {}
+                    @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {}
                 })
                 textToSpeech.speak("Welcome to Vision Assist", TextToSpeech.QUEUE_FLUSH, null, "WelcomeTTS")
@@ -112,6 +133,7 @@ class StartScreenActivity : AppCompatActivity() {
             private val handler = Handler(Looper.getMainLooper())
             private var isLongPress = false
 
+            @SuppressLint("ClickableViewAccessibility")
             override fun onTouch(view: View?, event: MotionEvent?): Boolean {
                 when (event?.action) {
                     MotionEvent.ACTION_DOWN -> {
@@ -138,6 +160,7 @@ class StartScreenActivity : AppCompatActivity() {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, null)
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setButtonTouchListener(button: Button, buttonName: String, action: () -> Unit) {
         button.setOnTouchListener(object : View.OnTouchListener {
             private val handler = Handler(Looper.getMainLooper())
@@ -192,13 +215,13 @@ class StartScreenActivity : AppCompatActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == 200 && resultCode == RESULT_OK && data != null) {
             val spokenText = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.get(0) ?: ""
 
-            // Check if the spoken text matches "object detection"
             when {
                 spokenText.contains("object detection", ignoreCase = true) -> {
                     openMainScreen()  // Navigate to the main screen for object detection
@@ -206,8 +229,22 @@ class StartScreenActivity : AppCompatActivity() {
                 spokenText.contains("read text", ignoreCase = true) -> {
                     openTextRecognitionScreen()  // Navigate to the text recognition screen
                 }
+                spokenText.contains("emergency", ignoreCase = true) -> {
+                    callEmergencyContact()  // Trigger the emergency contact call
+                }
+                spokenText.contains("settings", ignoreCase = true) -> {
+                    openAboutScreen()  // Open the Settings screen
+                }
+                spokenText.contains("exit", ignoreCase = true) -> {
+                    exitApp()  // Exit the application
+                }
                 else -> {
-                    textToSpeech.speak("Command not recognized. Please say 'Object detection' or 'Text recognition'.", TextToSpeech.QUEUE_FLUSH, null, null)
+                    textToSpeech.speak(
+                        "Command not recognized. Please say 'Object detection', 'Read text', 'Emergency', 'Settings', or 'Exit'.",
+                        TextToSpeech.QUEUE_FLUSH,
+                        null,
+                        null
+                    )
                 }
             }
         }
@@ -215,31 +252,19 @@ class StartScreenActivity : AppCompatActivity() {
 
     private fun callEmergencyContact() {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this)
-        val selectedContact = sharedPreferences.getString("selectedEmergencyContact", null)
+        val selectedNumber = sharedPreferences.getString("selectedEmergencyContact", null)
 
-        if (selectedContact != null) {
-            val emergencyContacts = mapOf(
-                "Sharath M Nair" to "8156944286",
-                "Police" to "100",
-                "Fire Department" to "101",
-                "Ambulance" to "102",
-            )
+        if (selectedNumber != null && selectedNumber.matches(Regex("\\d{2,}"))) { // Valid phone number check
+            val callIntent = Intent(Intent.ACTION_CALL)
+            callIntent.data = "tel:$selectedNumber".toUri()
 
-            val contactNumber = emergencyContacts[selectedContact]
-
-            if (contactNumber != null) {
-                val callIntent = Intent(Intent.ACTION_CALL)
-                callIntent.data = Uri.parse("tel:$contactNumber")
-                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                    startActivity(callIntent)
-                } else {
-                    ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE), 1)
-                }
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+                startActivity(callIntent)
             } else {
-                Toast.makeText(this, "Emergency contact number not found", Toast.LENGTH_SHORT).show()
+                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.CALL_PHONE), 1)
             }
         } else {
-            Toast.makeText(this, "Please select an emergency contact from Settings", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Please select a valid emergency contact from Settings", Toast.LENGTH_SHORT).show()
         }
     }
 

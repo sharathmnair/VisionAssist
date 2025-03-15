@@ -1,6 +1,7 @@
 package com.programminghut.realtime_object
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -56,6 +57,7 @@ class TextRecognitionActivity : AppCompatActivity() {
                 textToSpeech.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                     override fun onStart(utteranceId: String?) { isSpeaking = true }
                     override fun onDone(utteranceId: String?) { isSpeaking = false }
+                    @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) { isSpeaking = false }
                 })
             }
@@ -155,6 +157,7 @@ class TextRecognitionActivity : AppCompatActivity() {
         textToSpeech.speak(text, TextToSpeech.QUEUE_FLUSH, null, "TextRecognitionTTS")
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupSwipeGesture() {
         gestureDetector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(
@@ -163,7 +166,7 @@ class TextRecognitionActivity : AppCompatActivity() {
                 velocityX: Float,
                 velocityY: Float
             ): Boolean {
-                if (e1 != null && e2 != null && e1.x > e2.x) {
+                if (e1 != null && e1.x > e2.x) {
                     val intent = Intent(this@TextRecognitionActivity, StartScreenActivity::class.java)
                     startActivity(intent)
                     finish()
@@ -179,6 +182,7 @@ class TextRecognitionActivity : AppCompatActivity() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         super.onBackPressed()
         startActivity(Intent(this, MainActivity::class.java))

@@ -9,6 +9,7 @@ import android.graphics.SurfaceTexture
 import android.hardware.camera2.*
 import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
+import kotlin.math.abs
 import android.os.*
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -41,8 +42,8 @@ class MainActivity : AppCompatActivity() {
 
     private var isSpeaking = false
 
+    @SuppressLint("ClickableViewAccessibility")
     override fun onCreate(savedInstanceState: Bundle?) {
-        val detectedObjectsTextView = findViewById<TextView>(R.id.detectedObjectsTextView)
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -73,6 +74,7 @@ class MainActivity : AppCompatActivity() {
                         isSpeaking = false
                     }
 
+                    @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
                         isSpeaking = false
                     }
@@ -222,8 +224,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     inner class GestureListener : GestureDetector.SimpleOnGestureListener() {
-        private val SWIPE_THRESHOLD = 100
-        private val SWIPE_VELOCITY_THRESHOLD = 100
+        private val swipeThreshold = 100
+        private val swipeVelocityThreshold = 100
 
         override fun onFling(
             e1: MotionEvent?,
@@ -231,9 +233,9 @@ class MainActivity : AppCompatActivity() {
             velocityX: Float,
             velocityY: Float
         ): Boolean {
-            if (e1 != null && e2 != null) {
+            if (e1 != null) {
                 val diffX = e2.x - e1.x
-                if (diffX > SWIPE_THRESHOLD && Math.abs(velocityX) > SWIPE_VELOCITY_THRESHOLD) {
+                if (diffX > swipeThreshold && abs(velocityX) > swipeVelocityThreshold) {
                     startActivity(Intent(this@MainActivity, StartScreenActivity::class.java))
                     return true
                 }
