@@ -42,7 +42,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:background="@drawable/transparent_button"
-        android:text="VISION ASSIST"
+        android:text="VOICE COMMAND"
         android:textColor="@android:color/white"
         android:textSize="24sp"
         app:layout_constraintTop_toBottomOf="@id/settingsButton"

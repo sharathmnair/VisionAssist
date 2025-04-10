@@ -127,7 +127,6 @@ class StartScreenActivity : AppCompatActivity() {
             }
         }
 
-        // Set up startDetectionButton to announce voice command instructions
         // Set up startDetectionButton to announce voice command instructions and trigger voice recognition
         startDetectionButton.setOnTouchListener(object : View.OnTouchListener {
             private val handler = Handler(Looper.getMainLooper())
@@ -143,7 +142,7 @@ class StartScreenActivity : AppCompatActivity() {
                         handler.postDelayed({
                             isLongPress = true
                             triggerVibration(200)
-                            startObjectDetection()  // Start voice recognition when long-pressed
+                            voiceCommand()  // Start voice recognition when long-pressed
                         }, 800)  // Trigger voice recognition after 0.8 seconds
                     }
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -201,7 +200,7 @@ class StartScreenActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
-    private fun startObjectDetection() {
+    private fun voiceCommand() {
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
