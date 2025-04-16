@@ -1,19 +1,32 @@
+# Vision Assist 👁️📱
+An AI-powered Android application designed to assist visually impaired users with real-time object detection, text recognition, and audio feedback — all functioning offline.
 
-An AI-powered object detection and text recognition app with accessibility features.
+## 🌟 Features
 
-📌 Features
+- **Real-time Object Detection** using MobileNet SSD
+- **Text Recognition (OCR)** using Google ML Kit
+- **Text-to-Speech Feedback** for both objects and text
+- **Custom Distance Estimation** using bounding box height and camera parameters
+- **Gesture-Based Navigation** (Swipe left/right to switch between modes)
+- **Emergency Contact Button** (Long-press to call a pre-saved number)
+- **TalkBack Accessibility Support** (Single tap to speak, long press to act)
+- **Offline Functionality** — No internet required for main features
 
-✅ Real-time Object Detection – Uses TensorFlow Lite for fast object recognition.
-✅ Text Recognition (OCR) – Switch modes to read text from the camera view.
-✅ Voice Feedback – Announces detected objects and text using Text-to-Speech (TTS).
-✅ No Voice Input Required – Microphone access is not needed.
-✅ TalkBack Support – Fully accessible with screen readers.
-✅ Distance Estimation – Provides an estimated distance of detected objects.
-✅ Simple UI – One-button toggle between object detection and OCR modes.
-✅ Emergency Contacts – Quick access to important contacts.
+## 🛠️ Built With
 
-⚙️ Tech Stack
-	•	Android (Kotlin) – Core language
-	•	TensorFlow Lite – Object Detection & OCR
-	•	Text-to-Speech (TTS) – Voice feedback
-	•	TalkBack Accessibility – Screen reader support
+- **Kotlin** – Main programming language
+- **Android Studio** – Development environment
+- **TensorFlow Lite** – On-device object detection
+- **Google ML Kit** – On-device OCR (Text Recognition)
+- **Camera2 API** – Real-time camera feed processing
+- **Text-to-Speech API** – Converts output to spoken feedback
+
+
+## 📦 How to Run
+
+	1. Clone the repository:```bash
+   git clone https://github.com/yourusername/Vision-Assist.git
+	2.	Open in Android Studio.
+	3.	Connect your Android device (API 24+).
+	4.	Run the app.
+ Make sure you enable camera and microphone permissions on your device.
